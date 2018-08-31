@@ -1,4 +1,5 @@
 // Down checks if your internet connection is down.
+//
 package main
 
 import (
