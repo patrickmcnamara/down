@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 const (
@@ -14,9 +15,11 @@ const (
 	down = "\033[1;48;5;1mDOWN\033[0m"
 )
 
-// downCheck checks if the internet connection is down.
+// downCheck checks if the internet connection is down. If it doesn't get a
+// response within a second, it will fail.
 func downCheck() bool {
-	_, err := http.Get("https://google.com/")
+	c := http.Client{Timeout: time.Duration(time.Second)}
+	_, err := c.Get("https://google.com/")
 	return err != nil
 }
 
