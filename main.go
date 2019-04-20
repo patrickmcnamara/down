@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	// up is a string for printing "UP" in terminal with green text.
-	up = "\033[1;38;5;2mUP\033[0m"
-	// down is a string for printing "DOWN" in terminal with a red background.
-	down = "\033[1;48;5;1mDOWN\033[0m"
+	// up is "UP" with green text using ANSI colour codes.
+	up = "\x1b[1;38;5;2mUP\x1b[0m"
+	// down is "DOWN" with white text and a red background.
+	down = "\x1b[1;38;5;7m\x1b[48;5;1mDOWN\x1b[0m"
 )
 
 // downCheck checks if the internet connection is down. If it doesn't get a
