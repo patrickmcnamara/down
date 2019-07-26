@@ -47,8 +47,8 @@ func main() {
 	}
 
 	select {
-	case <-time.After(2 * time.Second):
-		fmt.Printf("%s (timed out after %d seconds)\n", down, timeout)
+	case <-time.After(timeout):
+		fmt.Printf("%s (timed out after %g seconds)\n", down, timeout.Seconds())
 		os.Exit(1)
 	case msg := <-message:
 		if msg.down {
