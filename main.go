@@ -1,32 +1,61 @@
-// Down checks if your internet connection is down.
-//
 package main
 
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 )
 
 const (
-	// up is "UP" with green text using ANSI colour codes.
-	up = "\x1b[1;38;5;2mUP\x1b[0m"
-	// down is "DOWN" with white text and a red background.
-	down = "\x1b[1;38;5;7m\x1b[48;5;1mDOWN\x1b[0m"
+	up      = "\x1b[1;38;5;2mUP\x1b[0m"
+	down    = "\x1b[1;38;5;7m\x1b[48;5;1mDOWN\x1b[0m"
+	timeout = 2 * time.Second
 )
 
-// downCheck checks if the internet connection is down. If it doesn't get a
-// response within a second, it will fail.
-func downCheck() bool {
-	c := http.Client{Timeout: time.Duration(time.Second)}
-	_, err := c.Get("https://google.com/")
-	return err != nil
-}
+var (
+	urls = []string{
+		"https://google.com/",
+		"https://facebook.com/",
+		"https://amazon.com/",
+		"https://microsoft.com/",
+		"https://apple.com/",
+	}
+)
 
 func main() {
-	if downCheck() {
-		fmt.Println(down)
-	} else {
-		fmt.Println(up)
+	message := make(chan struct {
+		url  string
+		down bool
+		dur  time.Duration
+	})
+
+	for _, url := range urls {
+		go func(url string) {
+			start := time.Now()
+			_, err := http.Get(url)
+			message <- struct {
+				url  string
+				down bool
+				dur  time.Duration
+			}{
+				url:  url,
+				down: err != nil,
+				dur:  time.Since(start),
+			}
+		}(url)
+	}
+
+	select {
+	case <-time.After(2 * time.Second):
+		fmt.Printf("%s (timed out after %d seconds)\n", down, timeout)
+		os.Exit(1)
+	case msg := <-message:
+		if msg.down {
+			fmt.Printf("%s (connection failed to %q)\n", down, msg.url)
+			os.Exit(1)
+		} else {
+			fmt.Printf("%s (connected to %q in %s)\n", up, msg.url, msg.dur)
+		}
 	}
 }
