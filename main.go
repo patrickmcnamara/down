@@ -23,39 +23,40 @@ var (
 	}
 )
 
+type message struct {
+	url  string
+	down bool
+	dur  time.Duration
+}
+
+func connect(url string, msg chan<- message) {
+	start := time.Now()
+	_, err := http.Get(url)
+	msg <- message{
+		url:  url,
+		down: err != nil,
+		dur:  time.Since(start),
+	}
+}
+
 func main() {
-	message := make(chan struct {
-		url  string
-		down bool
-		dur  time.Duration
-	})
+	msg := make(chan message)
+	timer := time.After(timeout)
 
 	for _, url := range urls {
-		go func(url string) {
-			start := time.Now()
-			_, err := http.Get(url)
-			message <- struct {
-				url  string
-				down bool
-				dur  time.Duration
-			}{
-				url:  url,
-				down: err != nil,
-				dur:  time.Since(start),
-			}
-		}(url)
+		go connect(url, msg)
 	}
 
 	select {
-	case <-time.After(timeout):
-		fmt.Printf("%s (timed out after %g seconds)\n", down, timeout.Seconds())
-		os.Exit(1)
-	case msg := <-message:
-		if msg.down {
-			fmt.Printf("%s (connection failed to %q)\n", down, msg.url)
+	case m := <-msg:
+		if m.down {
+			fmt.Printf("%s (connection failed to %q)\n", down, m.url)
 			os.Exit(1)
 		} else {
-			fmt.Printf("%s (connected to %q in %s)\n", up, msg.url, msg.dur)
+			fmt.Printf("%s (connected to %q in %s)\n", up, m.url, m.dur)
 		}
+	case <-timer:
+		fmt.Printf("%s (timed out after %g seconds)\n", down, timeout.Seconds())
+		os.Exit(1)
 	}
 }
